@@ -23,7 +23,7 @@ class PMemory:
     def _get_priority(self, error):
         return (np.abs(error) + self.e) ** self.a
 
-    def add(self, error, sample):
+    def add(self, sample, error):
         if isinstance(error, np.ndarray):
             def priority_wrap(s): 
                 return self._get_priority(s)

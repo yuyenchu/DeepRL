@@ -20,7 +20,7 @@ class Memory:
     def __str__(self):
         return str((self.states, self.states_next, self.actions, self.rewards, self.dones))
 
-    def add(self, sample):
+    def add(self, sample, error):
         s, s_n, a, r, d = sample
         self.states += s
         self.states_next += s_n 
