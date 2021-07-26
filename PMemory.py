@@ -24,8 +24,21 @@ class PMemory:
         return (np.abs(error) + self.e) ** self.a
 
     def add(self, error, sample):
-        p = self._get_priority(error)
-        self.tree.add(p, sample)
+        if isinstance(error, np.ndarray):
+            def priority_wrap(s): 
+                return self._get_priority(s)
+
+            priority = np.vectorize(priority_wrap)(error)
+            for p, s in zip(priority, sample):
+                self.tree.add(p, s)
+
+        elif isinstance(error, list):
+            for e, s in zip(error, sample):
+                p = self._get_priority(e)
+                self.tree.add(p, s)
+        else:
+            p = self._get_priority(error)            
+            self.tree.add(p, sample)
 
     def sample(self, n):
         batch = []
