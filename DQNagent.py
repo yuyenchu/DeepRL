@@ -1,5 +1,3 @@
-#DQNAgent
-
 import json
 import numpy as np
 from numpy import random
@@ -25,12 +23,17 @@ class DQNagent:
         self.gamma = 0.75
 
         self.variables_to_save = [
-            "n_step"
+            "n_step",
+            "num_actions",
+            "gamma"
         ]
 
         self.memory = memory
         self.model = self.build_model()
         self.model_target = self.build_model()
+
+        if not self.save_path.endswith("/"):
+            self.save_path += "/"
 
     def build_model(self):
         
@@ -56,25 +59,27 @@ class DQNagent:
         temp = {}
         for i in self.variables_to_save:
             exec("temp['%s'] = self.%s" % (i,i))
-        with open(f'{save_path}config.json', 'w') as f:
+        with open(f'{self.save_path}config.json', 'w') as f:
             json.dump(temp, f, cls=NpEncoder)
 
     def load_variables(self):
-        with open(f'{save_path}config.json') as f:
+        with open(f'{self.save_path}config.json') as f:
             data = json.load(f)
             temp = [s[:s.find("[")] for s in self.variables_to_save]
+            exec_str = ""
             for i in self.variables_to_save:
-                exec_str += ("self.%s=%s\nprint('%s =' ,%s)\n"%(i,str(data[i]),i,i))
+                exec_str += ("self.%s=%s\nprint('%s =' ,self.%s)\n"%(i,str(data[i]),i,i))
+            print(exec_str)
             exec(exec_str)
 
     def save(self):
-        self.model.save(f'model')
-        self.model_target.save(f'target')
+        self.model.save(f'{self.save_path}model')
+        self.model_target.save(f'{self.save_path}target')
         self.save_variables()
 
     def load(self):
-        self.model = load_model(f'model')
-        self.model_target = load_model(f'target')
+        self.model = load_model(f'{self.save_path}model')
+        self.model_target = load_model(f'{self.save_path}target')
         self.load_variables()
 
     def sample_replay(self, batch_size):
@@ -132,13 +137,6 @@ class DQNagent:
         return loss
 
     def target_q(self, state_next_sample, rewards_sample, done_sample):
-        """
-        state_next_sample: np.ndarray
-        rewards_sample: array
-        done_sample: bool array
-
-        Sampled data of different actors
-        """
         if self.DOUBLE:
             future_actions = np.argmax(self.model(state_next_sample), axis=1)
             future_rewards = self.model_target(state_next_sample).numpy()
