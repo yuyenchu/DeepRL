@@ -44,7 +44,7 @@ class Memory:
         r = [self.rewards[i] for i in indices]
         d = tf.convert_to_tensor([float(self.dones[i]) for i in indices])
 
-        return s, s_n, a, r, d
+        return [s, s_n, a, r, d], [], []
 
     def save(self):
         h5f = h5py.File(self.file_path, 'w')
