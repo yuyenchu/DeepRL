@@ -5,8 +5,9 @@ import time
 
 N = 1000
 MAX = 10**5
-pm = PMemory(N, "./testPM.h5")
+pm = PMemory(N, "./test_folder/testPM.h5")
 a = DQNagent(pm, "./test_folder")
+print(a.save_path)
 a.gamma = 0.99
 a.save()
 a.load()
