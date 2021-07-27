@@ -414,3 +414,26 @@ while frame_count//max_frame <= max_loop or inf_loop:  # Run until solved or rea
 model.save(f'{save_path}{GAME}_v{VERSION}')
 model_target.save(f'{save_path}{GAME}_target_v{VERSION}')
 save_variables()
+
+################################################################
+class D3QNgym:
+    def __init__(self, save_path, game, ...runtime_parameters):
+        # initialize variables
+        self.save_path = save_path
+        self.env = gym.make(game)
+        self.memory = PMemory(...)
+        self.agent = DQNagent(...)
+        self.runtime_parameters = ... # ex: epsilon, frame_count, running_reward
+        self.buffer = ... # memory buffer for run
+    
+    def run(self, ...run_options):
+        # run and train agent to fit env
+
+    def save(self):
+        # save necessary variables for rebuilding
+    
+    def load(self):
+        # load and rebuild class and variables
+
+    def render(self, ...render_options):
+        # render/output an episode visualization

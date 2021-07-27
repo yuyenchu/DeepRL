@@ -68,11 +68,11 @@ class DQNagent:
         temp = {}
         for i in self.variables_to_save:
             exec("temp['%s'] = self.%s" % (i,i))
-        with open(f'{self.save_path}config.json', 'w') as f:
+        with open(f'{self.save_path}agent_config.json', 'w') as f:
             json.dump(temp, f, cls=NpEncoder)
 
     def load_variables(self):
-        with open(f'{self.save_path}config.json') as f:
+        with open(f'{self.save_path}agent_config.json') as f:
             data = json.load(f)
             temp = [s[:s.find("[")] for s in self.variables_to_save]
             exec_str = ""
