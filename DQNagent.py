@@ -29,6 +29,11 @@ class DQNagent:
         ]
         # main components of agent
         self.memory = memory
+        '''
+        required functions for memory
+            add(sample): store a batch of sample to memory, return nothing
+            sample(n): return n number of memory in format (sample, sample_index, sample_weight)
+        '''
         self.loss_function = keras.losses.Huber()
         self.optimizer = keras.optimizers.Adam()
         self.model = self.build_model()
@@ -124,19 +129,19 @@ class DQNagent:
 
     # train model with given sample and target(updated_q_values)
     def train(self, state_sample, action_sample, updated_q_values):
-        # Create a mask so we only calculate loss on the updated Q-values
+        # create a mask so we only calculate loss on the updated Q-values
         masks = tf.one_hot(action_sample, self.num_actions)
 
         with tf.GradientTape() as tape:
-            # Train the model on the states and updated Q-values
+            # train the model on the states and updated Q-values
             q_values = self.model(state_sample)
 
-            # Apply the masks to the Q-values to get the Q-value for action taken
+            # apply the masks to the Q-values to get the Q-value for action taken
             q_action = tf.reduce_sum(tf.multiply(q_values, masks), axis=1)
-            # Calculate loss between new Q-value and old Q-value
+            # calculate loss between new Q-value and old Q-value
             loss = self.loss_function(updated_q_values, q_action)
 
-            # Backpropagation
+            # backpropagation
             grads = tape.gradient(loss, self.model.trainable_variables)
             self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
 
@@ -147,11 +152,6 @@ class DQNagent:
         if self.DOUBLE:
             future_actions = np.argmax(self.model(state_next_sample), axis=1)
             future_rewards = self.model_target(state_next_sample).numpy()
-            # print(future_rewards)
-            # arr_len_done = [int(i) for i in range(len(done_sample))]
-            # print(type(arr_len_done))
-            # future_actions = np.array(future_actions)
-
             future_rewards = future_rewards[range(len(done_sample)),future_actions]
         else:
             future_rewards = tf.reduce_max(self.model_target(state_next_sample), axis=1)
