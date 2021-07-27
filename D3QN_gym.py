@@ -417,18 +417,26 @@ save_variables()
 
 ################################################################
 class D3QNgym:
+    ### to be implemented ###
     def __init__(self, save_path, game, ...runtime_parameters):
         # initialize variables
         self.save_path = save_path
-        self.env = gym.make(game)
-        self.memory = PMemory(...)
-        self.agent = DQNagent(...)
-        self.runtime_parameters = ... # ex: epsilon, frame_count, running_reward
-        self.buffer = ... # memory buffer for run
+        self.env = gym.make(game)   # some parameters change based on game
+        self.memory = PMemory(...)  # watch out for memory size
+        self.agent = DQNagent(...)  # require maual setup DQNagent config in DQNagent.py
+        self.runtime_parameters =...# ex: epsilon, frame_count, running_reward
+        self.buffer =...            # memory buffer for running each episode
+    
+    def setup(self):
+        # setup everything needed to start run
     
     def run(self, ...run_options):
+        self.setup()
+        while ...condition:
+            pass
         # run and train agent to fit env
 
+    ### implement after run is stable ###
     def save(self):
         # save necessary variables for rebuilding
     
