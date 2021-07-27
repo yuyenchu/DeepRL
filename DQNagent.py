@@ -6,35 +6,38 @@ from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.models import load_model
 
-from PMemory import PMemory
-from Memory import Memory
+# from PMemory import PMemory
+# from Memory import Memory
 
 class DQNagent:
     def __init__(self, memory, save_path):
         # setting path for saving 
         self.save_path = save_path
-        # setting type of DQN
+        # DQN type 
         self.DUELING = True
         self.DOUBLE = True
-
+        # agent config
         self.DONE_PUNISH = False
         self.n_step = 4
         self.num_actions = 10
         self.gamma = 0.75
-
+        # saving / loading config
         self.variables_to_save = [
             "n_step",
             "num_actions",
             "gamma"
         ]
-
+        # main components of agent
         self.memory = memory
+        self.loss_function = keras.losses.Huber()
+        self.optimizer = keras.optimizers.Adam()
         self.model = self.build_model()
         self.model_target = self.build_model()
-
+        # ensuring save_path is a directory
         if not self.save_path.endswith("/"):
             self.save_path += "/"
 
+    # building model for agent
     def build_model(self):
         
         #inputs = layers.Input(shape=in_shape)
@@ -54,7 +57,8 @@ class DQNagent:
             return keras.Model(inputs=inputs, outputs=out)
             
         return keras.Model(inputs=inputs, outputs=action)
-        
+    
+    # helper for saving / loading class variables
     def save_variables(self):
         temp = {}
         for i in self.variables_to_save:
@@ -72,6 +76,7 @@ class DQNagent:
             print(exec_str)
             exec(exec_str)
 
+    # saving / loading necessary data for rebuilding
     def save(self):
         self.model.save(f'{self.save_path}model')
         self.model_target.save(f'{self.save_path}target')
@@ -82,12 +87,14 @@ class DQNagent:
         self.model_target = load_model(f'{self.save_path}target')
         self.load_variables()
 
+    # process and return memory sampling of given sive
     def sample_replay(self, batch_size):
         sample, idx, is_weight = self.memory.sample(batch_size)
         state_sample, state_next_sample, action_sample, rewards_sample, done_sample = sample[0]
         
         return np.stack(state_sample), np.stack(state_next_sample), action_sample.astype(np.int32), rewards_sample.astype(np.float64), np.stack(done_sample), idx, is_weight
 
+    # process and save the given data into memory
     def save_memory(self, state, state_next, action, returns, done):
         masks = tf.one_hot(action, self.num_actions)
         q_values = self.model(np.array(state))
@@ -95,9 +102,10 @@ class DQNagent:
         target_q_val = self.target_q(np.array(state_next), returns, np.array(done))
         priority = q_val - target_q_val
 
-        for p,s,s_n,a,r,d in zip(priority, state,state_next, action, returns,done):
+        for p,s,s_n,a,r,d in zip(priority, state, state_next, action, returns, done):
             memory.add([s,s_n,a,r,d], p)
 
+    # forward propagation of given state with model (random action if random_act set to True)
     def forward(self, state, random_act=False):
         # Use epsilon-greedy for exploration
         if random_act:
@@ -114,10 +122,8 @@ class DQNagent:
 
         return action
 
+    # train model with given sample and target(updated_q_values)
     def train(self, state_sample, action_sample, updated_q_values):
-        self.loss_function = keras.losses.Huber()
-        self.optimizer = keras.optimizers.Adam()
-        
         # Create a mask so we only calculate loss on the updated Q-values
         masks = tf.one_hot(action_sample, self.num_actions)
 
@@ -136,6 +142,7 @@ class DQNagent:
 
         return loss
 
+    # compute the target q values of given sample
     def target_q(self, state_next_sample, rewards_sample, done_sample):
         if self.DOUBLE:
             future_actions = np.argmax(self.model(state_next_sample), axis=1)
@@ -154,7 +161,8 @@ class DQNagent:
         updated_q_values = updated_q_values * (1 - done_sample) - done_sample*self.DONE_PUNISH
 
         return updated_q_values
-    
+
+# helper class for classifying and casting variable type for json format
 class NpEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.integer):
