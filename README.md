@@ -2,7 +2,7 @@
 
 ## Description
 
-Recreating the Ape-X DQN, a distributed architecture for deep reinforcement learning proposed by DeepMind, with tensorflow and applying on the OpenAI gym environments
+Recreating the Ape-X Deep Q-Network, a distributed architecture for deep reinforcement learning proposed by DeepMind, with tensorflow and applying on the OpenAI gym environments
 
 ## Getting Started
 
