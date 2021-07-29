@@ -32,6 +32,7 @@ Email us for more detail
 ## Authors
 
 Andrew Yu - [Github](https://github.com/yuyenchu) - andrew7011616@gmail.com
+
 Haley Lin - [Github](https://github.com/HaleyLin2006) - haleylin2006@gmail.com
 
 ## Version History
