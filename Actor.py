@@ -11,18 +11,18 @@ class Actor(threading.Thread):
     def __init__(self, id, gym_name, memory, save_path, memlock, netlock, seed=None, verbose=False,\
                 net_update_epi=100, max_buffer_length=10000, n_step=1, gamma=0.99, epislon=1.0,\
                 epislon_min=0.2, episilon_decay=0, random_act=0, max_frame_per_episode=-1, **settings):
-
+        # declaring objects
         threading.Thread.__init__(self)
         self.kill = threading.Event()
         self.env = gym.make(gym_name)
         self.in_shape = self.env.observation_space.shape
         self.num_actions = self.env.action_space.n
         self.agent = DQNagent(memory, save_path, self.in_shape, self.num_actions, n_step=n_step, gamma=gamma, verbose=verbose, **settings)
-
+        # threading stuff
         self.id = id
         self.memlock = memlock
         self.netlock = netlock
-
+        # constant values
         self.verbose = verbose
         self.n_step = n_step
         self.gamma = gamma
@@ -32,20 +32,22 @@ class Actor(threading.Thread):
         self.net_update_epi = net_update_epi
         self.max_buffer_length = max_buffer_length
         self.max_frame_per_episode = max_frame_per_episode
-
+        # non-constant values
         self.episilon = epislon
         self.frames = 0
         self.episodes = 0
         self.buffer = {'state':[],'state_next':[],'action':[],'reward':[],'done':[]}
-
+        # setting seed if value is acceptable
         if isinstance(seed, int) and seed > 0:
             self.env.seed(seed)
             np.random.seed(seed)
 
+    # print formatting
     def message(self, *msg):
         if self.verbose:
             print("["+str(datetime.now())+"] Actor", self.id, "-", *msg)
     
+    # main loop
     def run(self):
         self.message("started")
         while not self.kill.is_set():
