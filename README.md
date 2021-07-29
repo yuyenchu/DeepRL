@@ -37,8 +37,8 @@ Haley Lin - [Github](https://github.com/HaleyLin2006) - haleylin2006@gmail.com
 
 ## Version History
 
-* 0.1
-    * Initial Release
+* 0.0
+    * In Development (incomplete)
 
 ## License
 
