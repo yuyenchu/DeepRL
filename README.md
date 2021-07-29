@@ -1,6 +1,4 @@
-# Project Title
-
-Ape-X DQN 
+# Ape-X DQN 
 
 ## Description
 
