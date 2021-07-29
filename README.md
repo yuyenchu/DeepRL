@@ -2,7 +2,7 @@
 
 ## Description
 
-Ape-X DQN for openai gym
+Recreating the Ape-X DQN, a distributed architecture for deep reinforcement learning proposed by DeepMind, with tensorflow and applying on the OpenAI gym environments
 
 ## Getting Started
 
@@ -46,6 +46,9 @@ This project is licensed under the GNU License - see the LICENSE.md file for det
 
 ## Acknowledgments
 
-Inspiration and snippets from
+Inspiration and snippet from
 * [Distributed Prioritized Experience Replay](https://arxiv.org/pdf/1803.00933v1.pdf)
+* [Prioritized Experience Replay](https://arxiv.org/pdf/1511.05952.pdf)
+* [Multi-step Bootstrapping](https://www.cs.ubc.ca/labs/lci/mlrg/slides/Multi-step_Bootstrapping.pdf)
+* [Implementing Deep Reinforcement Learning Models with Tensorflow + OpenAI Gym](https://lilianweng.github.io/lil-log/2018/05/05/implementing-deep-reinforcement-learning-models.html#deep-q-network)
 * [Deep Q-Learning for Atari Breakout](https://keras.io/examples/rl/deep_q_network_breakout/)
