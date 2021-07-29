@@ -116,6 +116,9 @@ class DQNagent:
         else:
             self.model_target.set_weights(w1)
 
+    def get_weights(self):
+        return self.model.get_weights(), self.model_target.get_weights()
+
     # process and return memory sampling of given sive
     def sample_replay(self, batch_size):
         sample, idx, is_weight = self.memory.sample(batch_size)

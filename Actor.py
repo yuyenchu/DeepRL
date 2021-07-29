@@ -8,8 +8,8 @@ from datetime import datetime
 from DQNagent import DQNagent
 
 class Actor(threading.Thread):
-    def __init__(self, id, gym_name, memory, save_path, memlock, netlock, seed=None, verbose=False,\
-                net_update_epi=100, max_buffer_length=10000, n_step=1, gamma=0.99, epislon=1.0,\
+    def __init__(self, id, gym_name, memory, save_path, memlock, netlock, get_weights, seed=None, 
+                verbose=False, net_update_epi=100, max_buffer_length=10000, n_step=1, gamma=0.99, epislon=1.0,\
                 epislon_min=0.2, episilon_decay=0, random_act=0, max_frame_per_episode=-1, **settings):
         # declaring objects
         threading.Thread.__init__(self)
@@ -22,6 +22,7 @@ class Actor(threading.Thread):
         self.id = id
         self.memlock = memlock
         self.netlock = netlock
+        self.get_weights = get_weights
         # constant values
         self.verbose = verbose
         self.n_step = n_step
@@ -93,10 +94,14 @@ class Actor(threading.Thread):
                 self.episilon = max(self.epislon_min, self.episilon-self.episilon_decay)
                 if self.kill.is_set() or done:
                     break
+                
             # episode end
             self.episodes+=1
+
+            # getting latest network parameters from learner
             if self.episodes%self.net_update_epi == 0:
                 self.netlock.acquire()
-                # self.agent.set_weights()
+                self.message("get network weights")
+                self.agent.set_weights(*self.get_weights())
                 self.netlock.release()
         self.message("stopped")

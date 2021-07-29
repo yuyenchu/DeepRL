@@ -9,24 +9,30 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import threading
 
-N = 100000
-memlock = threading.Lock()
-netlock = threading.Lock()
-pm = PMemory(N, "./test_folder/testPM.h5")
-a = []
-for i in range(3):
-    a.append(Actor(i, "CartPole-v0",pm, "./test_folder", memlock, netlock,verbose=True))
-for b in a:
-    b.start()
+def g():
+    return 1, 2
+def f(a,b):
+    print(b,";",a)
 
-# testing killing thread
-sleep(3)
-print("sleep over")
-for b in a:
-    b.kill.set() 
-for b in a:
-    b.join()
-print("done with",len(pm),"memory")
+f(*g())
+# N = 100000
+# memlock = threading.Lock()
+# netlock = threading.Lock()
+# pm = PMemory(N, "./test_folder/testPM.h5")
+# a = []
+# for i in range(3):
+#     a.append(Actor(i, "CartPole-v0",pm, "./test_folder", memlock, netlock,verbose=True))
+# for b in a:
+#     b.start()
+
+# # testing killing thread
+# sleep(3)
+# print("sleep over")
+# for b in a:
+#     b.kill.set() 
+# for b in a:
+#     b.join()
+# print("done with",len(pm),"memory")
 
 # # testing saving / loading agent
 # a = DQNagent(pm, "./test_folder")
