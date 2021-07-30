@@ -1,5 +1,4 @@
 import numpy as np
-import time 
 import threading
 
 from PMemory import PMemory
@@ -9,27 +8,35 @@ from Learner import Learner
 class Manager(object):
     def __init__(self, mem_save_path, MEM_LENGTH=10000, ACTORS=10,\
                 BASIC_SETTING={}, LEARNER_SETTING={}, ACTOR_SETTING={}):
+        # setting memory pool
         self.memory = PMemory(MEM_LENGTH, mem_save_path)
+        # setting thread locks
         self.memlock = threading.Lock()
         self.netlock = threading.Lock()
         BASIC_SETTING["memory"]  = self.memory
         BASIC_SETTING["memlock"] = self.memlock
         BASIC_SETTING["netlock"] = self.netlock
+        # create learner
         self.learner = Learner(**BASIC_SETTING, **LEARNER_SETTING)
         self.agents = [self.learner]
+        # create actors
         if isinstance(ACTOR_SETTING, list):
+            # condition if setting is provided for each actor Individually 
             if len(ACTOR_SETTING) != ACTORS:
-                raise ValueError("length of ACTOR_SETTING does not math the amout of actors")
+                raise ValueError("length of ACTOR_SETTING does not match the amout of actors")
             for setting in ACTOR_SETTING:
                 self.agents.append(Actor(**BASIC_SETTING, **setting, get_weights=self.learner.get_weights))
-        else:    
+        else: 
+            # defult for actors sharing same setting
             for i in range(ACTORS):
                 self.agents.append(Actor(i, **BASIC_SETTING, **ACTOR_SETTING, get_weights=self.learner.get_weights, epsilon=1-i/ACTORS))
         
+    # start all agents, including both learner and actors
     def start(self):
         for a in self.agents:
             a.start()
 
+    # save / load necessary data for rebuilding
     def save(self):
         self.manager.save()
         self.memory.save()
@@ -40,6 +47,7 @@ class Manager(object):
         for a in self.agents[1:]:
             a.update_weights()
 
+    # stop all agents 
     def kill_all_threads(self):
         for a in self.agents:
             a.kill.set() 

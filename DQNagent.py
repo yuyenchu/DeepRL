@@ -5,10 +5,22 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.models import load_model
-# from numba import jit
 
+# empty funtion for placeholder
 def empty_func(*args, **kwargs):
     pass
+
+# helper class for classifying and casting variable type for json format
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        else:
+            return super(NpEncoder, self).default(obj)
 
 class DQNagent:
     def __init__(self, memory, save_path, in_shape, num_actions,\
@@ -58,21 +70,23 @@ class DQNagent:
         inputs = layers.Input(shape=self.in_shape)
         if middle_layer is None:
             # define your custom model here if not provide middle_layer
+            # NOTE: name your last layer as "last_layer"
             ###################################
             layer1 = layers.Dense(32, activation="relu")(inputs)
-            layer2 = layers.Dense(32, activation="relu")(layer1)
-            action = layers.Dense(self.num_actions, activation="linear")(layer1)
+            last_layer = layers.Dense(32, activation="relu")(layer1)
             ###################################
         else:
-            layer = middle_layer(inputs)
-            action = layers.Dense(self.num_actions, activation="linear")(layer)
+            last_layer = middle_layer(inputs)
+        
+        action = layers.Dense(self.num_actions, activation="linear")(last_layer)
 
         if self.DUELING:
             if self.verbose:
                 print("activated Dueling DQN")
             self.message("activated Dueling DQN")
+
             # v predict state value for dueling DQN
-            v = layers.Dense(1, activation="linear")(layer2)
+            v = layers.Dense(1, activation="linear")(last_layer)
             out = v + (action - tf.reduce_mean(action, axis=1, keepdims=True))
             return keras.Model(inputs=inputs, outputs=out)
             
@@ -118,6 +132,7 @@ class DQNagent:
         self.model_target = load_model(f'{self.save_path}target')
         self.load_variables()
 
+    # set / get weights for model and target model
     def set_weights(self, w1, w2=None):
         self.model.set_weights(w1)
         if w2 is not None:
@@ -196,15 +211,3 @@ class DQNagent:
         updated_q_values = updated_q_values * (1 - done_sample) - done_sample*self.DONE_PUNISH
 
         return updated_q_values
-
-# helper class for classifying and casting variable type for json format
-class NpEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.integer):
-            return int(obj)
-        elif isinstance(obj, np.floating):
-            return float(obj)
-        elif isinstance(obj, np.ndarray):
-            return obj.tolist()
-        else:
-            return super(NpEncoder, self).default(obj)

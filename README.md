@@ -8,7 +8,7 @@ Recreating the Ape-X Deep Q-Network, a distributed architecture for deep reinfor
 
 ### Dependencies
 
-* Developed on macOS Mojave
+* Developed on macOS Mojave with Python 3.8.8
 
 ### Installing
 
@@ -33,7 +33,7 @@ Email us for more detail
 
 Andrew Yu - [Github](https://github.com/yuyenchu) - andrew7011616@gmail.com
 
-Haley Lin - [Github](https://github.com/HaleyLin2006) - haleylin2006@gmail.com
+Haley Lin (coeditor) - [Github](https://github.com/HaleyLin2006) - haleylin2006@gmail.com
 
 ## Version History
 
