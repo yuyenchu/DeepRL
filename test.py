@@ -17,12 +17,12 @@ pm = PMemory(N, "./test_folder/testPM.h5")
 l = Learner("main", "CartPole-v0",pm, "./test_folder", memlock, netlock, verbose=True)
 a = []
 for i in range(3):
-    a.append(Actor(i, "CartPole-v0",pm, "./test_folder", memlock, netlock, l.get_weights, verbose=True))
+    a.append(Actor(i, "CartPole-v0",pm, "./test_folder", memlock, netlock, l.get_weights, verbose=True, net_update_per_epi=400))
 for b in a:
     b.start()
 l.start()
 # testing killing thread
-sleep(20)
+sleep(60)
 print("sleep over")
 for b in a:
     b.kill.set() 
