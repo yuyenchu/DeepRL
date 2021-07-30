@@ -7,12 +7,16 @@ from tensorflow.keras import layers
 from tensorflow.keras.models import load_model
 # from numba import jit
 
+def empty_func(*args, **kwargs):
+    pass
+
 class DQNagent:
     def __init__(self, memory, save_path, in_shape, num_actions,\
                 DUELING=True, DOUBLE=True, DONE_PUNISH=False, n_step=1,\
-                gamma=0.99, middle_layer=None, verbose=False):
+                gamma=0.99, middle_layer=None, verbose=False, message=empty_func):
         # setting path for saving 
         self.save_path = save_path
+        self.message = message
         # DQN type 
         self.DUELING = DUELING
         self.DOUBLE = DOUBLE
@@ -66,6 +70,7 @@ class DQNagent:
         if self.DUELING:
             if self.verbose:
                 print("activated Dueling DQN")
+            self.message("activated Dueling DQN")
             # v predict state value for dueling DQN
             v = layers.Dense(1, activation="linear")(layer2)
             out = v + (action - tf.reduce_mean(action, axis=1, keepdims=True))
@@ -82,6 +87,7 @@ class DQNagent:
             json.dump(temp, f, cls=NpEncoder)
             if self.verbose:
                 print(temp)
+            self.message(temp)
 
     def load_variables(self):
         with open(f'{self.save_path}agent_config.json') as f:
@@ -93,11 +99,13 @@ class DQNagent:
                 if self.verbose:
                     exec_str += ("print('%s =' ,self.%s)\n"%(i,i))
             exec(exec_str)
+            self.message(exec_str)
 
     # saving / loading necessary data for rebuilding
     def save(self):
         if self.verbose:
-            print("saving at", self.save_path)
+            print("agent saving at", self.save_path)
+        self.message("agent saving at", self.save_path)
         self.model.save(f'{self.save_path}model')
         self.model_target.save(f'{self.save_path}target')
         self.save_variables()
@@ -105,6 +113,7 @@ class DQNagent:
     def load(self):
         if self.verbose:
             print("loading from", self.save_path)
+        self.message("agent loading from", self.save_path)
         self.model = load_model(f'{self.save_path}model')
         self.model_target = load_model(f'{self.save_path}target')
         self.load_variables()
@@ -172,7 +181,7 @@ class DQNagent:
             grads = tape.gradient(loss, self.model.trainable_variables)
             self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
 
-        return loss
+        return loss.numpy() 
 
     # compute the target q values of given sample
     def target_q(self, state_next_sample, rewards_sample, done_sample):

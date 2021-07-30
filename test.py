@@ -1,6 +1,7 @@
 from PMemory import PMemory
 from DQNagent import DQNagent
 from Actor import Actor
+from Learner import Learner
 import numpy as np
 import time 
 from time import sleep
@@ -9,30 +10,27 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import threading
 
-def g():
-    return 1, 2
-def f(a,b):
-    print(b,";",a)
-
-f(*g())
-# N = 100000
-# memlock = threading.Lock()
-# netlock = threading.Lock()
-# pm = PMemory(N, "./test_folder/testPM.h5")
-# a = []
-# for i in range(3):
-#     a.append(Actor(i, "CartPole-v0",pm, "./test_folder", memlock, netlock,verbose=True))
-# for b in a:
-#     b.start()
-
-# # testing killing thread
-# sleep(3)
-# print("sleep over")
-# for b in a:
-#     b.kill.set() 
-# for b in a:
-#     b.join()
-# print("done with",len(pm),"memory")
+N = 100000
+memlock = threading.Lock()
+netlock = threading.Lock()
+pm = PMemory(N, "./test_folder/testPM.h5")
+l = Learner("main", "CartPole-v0",pm, "./test_folder", memlock, netlock, verbose=True)
+a = []
+for i in range(3):
+    a.append(Actor(i, "CartPole-v0",pm, "./test_folder", memlock, netlock, l.get_weights, verbose=True))
+for b in a:
+    b.start()
+l.start()
+# testing killing thread
+sleep(20)
+print("sleep over")
+for b in a:
+    b.kill.set() 
+l.kill.set() 
+for b in a:
+    b.join()
+l.join()
+print("done with",len(pm),"memory")
 
 # # testing saving / loading agent
 # a = DQNagent(pm, "./test_folder")
@@ -75,3 +73,20 @@ f(*g())
  
 # model = keras.Model(inputs=inputs, outputs=out)
 # model.summary()
+
+# # testing passing class func to another class
+# class c1:
+#     def __init__(self, f):
+#         self.f = f
+#     def g(self):
+#         self.f("ha")
+
+# class c2:
+#     def __init__(self):
+#         self.var = 3
+#         self.c = c1(self.f)
+#     def f(self, x):
+#         print(self.var,";",x)
+
+# c = c2()
+# c.c.g()
