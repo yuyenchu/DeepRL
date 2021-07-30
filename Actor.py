@@ -47,6 +47,13 @@ class Actor(threading.Thread):
     def message(self, *msg):
         if self.verbose:
             print("["+str(datetime.now())+"] Actor", self.id, "-", *msg)
+
+    # getting network parameters from learner
+    def update_weights(self):
+        self.netlock.acquire()
+        self.message("updating network weights")
+        self.agent.set_weights(*self.get_weights())
+        self.netlock.release()
     
     # main loop
     def run(self):
@@ -81,7 +88,7 @@ class Actor(threading.Thread):
                                             self.buffer['reward'][:-self.n_step],\
                                             self.buffer['done'][:-self.n_step])
                     self.memlock.release()
-
+                    # cleanup buffer
                     del self.buffer['state'][:-self.n_step]
                     del self.buffer['state_next'][:-self.n_step]
                     del self.buffer['action'][:-self.n_step]
@@ -100,8 +107,5 @@ class Actor(threading.Thread):
 
             # getting latest network parameters from learner
             if self.episodes%self.net_update_per_epi == 0:
-                self.netlock.acquire()
-                self.message("updating network weights")
-                self.agent.set_weights(*self.get_weights())
-                self.netlock.release()
+                self.update_weights()
         self.message("stopped")
