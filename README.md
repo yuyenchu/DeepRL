@@ -20,9 +20,9 @@ pip install -r requirements.txt
 
 ### Executing program
 
-* How to run...
+* Run example on CartPole-v0 environment
 ```
-code...
+python example.py
 ```
 
 ## Help
@@ -37,7 +37,9 @@ Haley Lin - [Github](https://github.com/HaleyLin2006) - haleylin2006@gmail.com
 
 ## Version History
 
-* 0.0
+* 0.1-alpha
+    * Prototype Complete (partial functions incomplete)
+* 0.0-alpha
     * In Development (incomplete)
 
 ## License
