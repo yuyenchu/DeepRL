@@ -14,15 +14,26 @@ N = 100000
 memlock = threading.Lock()
 netlock = threading.Lock()
 pm = PMemory(N, "./test_folder/testPM.h5")
-l = Learner("main", "CartPole-v0",pm, "./test_folder", memlock, netlock, verbose=True)
+setting = {
+    "gym_name":"CartPole-v0",
+    "memory":pm, 
+    "save_path":"./test_folder", 
+    "memlock":memlock, 
+    "netlock":netlock, 
+    "verbose":True,
+    "n_step":1, 
+    "gamma":0.99
+}
+l = Learner("main", **setting)
 a = []
 for i in range(3):
-    a.append(Actor(i, "CartPole-v0",pm, "./test_folder", memlock, netlock, l.get_weights, verbose=True, net_update_per_epi=400))
+    a.append(Actor(i, **setting, get_weights=l.get_weights, net_update_per_epi=400, epsilon=1-i/10))
+    # print(a[i].epsilon)
 for b in a:
     b.start()
 l.start()
 # testing killing thread
-sleep(60)
+sleep(1)
 print("sleep over")
 for b in a:
     b.kill.set() 

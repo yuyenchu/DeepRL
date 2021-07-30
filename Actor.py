@@ -10,7 +10,7 @@ from DQNagent import DQNagent
 class Actor(threading.Thread):
     def __init__(self, id, gym_name, memory, save_path, memlock, netlock, get_weights, seed=None, 
                 verbose=False, net_update_per_epi=100, max_buffer_length=10000, n_step=1, gamma=0.99,\
-                epislon=1.0, epislon_min=0.2, episilon_decay=0, random_act=0, max_frame_per_episode=-1, **settings):
+                epsilon=1.0, epsilon_min=0.2, epsilon_decay=0, random_act=0, max_frame_per_episode=-1, **settings):
         # threading stuff
         threading.Thread.__init__(self)
         self.kill = threading.Event()
@@ -27,14 +27,14 @@ class Actor(threading.Thread):
         # constant values
         self.n_step = n_step
         self.gamma = gamma
-        self.epislon_min = epislon_min
-        self.episilon_decay = episilon_decay
+        self.epsilon_min = epsilon_min
+        self.epsilon_decay = epsilon_decay
         self.random_act = random_act
         self.net_update_per_epi = net_update_per_epi
         self.max_buffer_length = max_buffer_length
         self.max_frame_per_episode = max_frame_per_episode
         # non-constant values
-        self.episilon = epislon
+        self.epsilon = epsilon
         self.frames = 0
         self.episodes = 0
         self.buffer = {'state':[],'state_next':[],'action':[],'reward':[],'done':[]}
@@ -56,7 +56,7 @@ class Actor(threading.Thread):
             epi_frame = 1
             # episode start
             while self.max_frame_per_episode<0 or epi_frame<=self.max_frame_per_episode:
-                action = self.agent.forward(state, (self.frames<self.random_act or random.uniform()<self.episilon))
+                action = self.agent.forward(state, (self.frames<self.random_act or random.uniform()<self.epsilon))
                 state_next, reward, done, _ = self.env.step(action)
                 ################################
                 # saving to local buffer
@@ -91,7 +91,7 @@ class Actor(threading.Thread):
                 state = np.array(state_next)
                 self.frames+=1
                 epi_frame+=1
-                self.episilon = max(self.epislon_min, self.episilon-self.episilon_decay)
+                self.epsilon = max(self.epsilon_min, self.epsilon-self.epsilon_decay)
                 if self.kill.is_set() or done:
                     break
 
