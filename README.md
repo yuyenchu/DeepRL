@@ -12,7 +12,8 @@ Recreating the Ape-X Deep Q-Network, a distributed architecture for deep reinfor
 
 ### Installing
 
-* Install required module with
+* Clone or download the repository
+* Install required modules with
 ```
 pip install -r requirements.txt
 ```

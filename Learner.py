@@ -33,6 +33,13 @@ class Learner(threading.Thread):
         if isinstance(seed, int) and seed > 0:
             np.random.seed(seed)
 
+    # save / load necessary data for rebuilding
+    def save(self):
+        self.agent.save()
+
+    def load(self):
+        self.agent.load()
+
     # print formatting
     def message(self, *msg):
         if self.verbose:
@@ -47,26 +54,32 @@ class Learner(threading.Thread):
         self.message("started")
         while not self.kill.is_set():
             if len(self.memory) > self.batch_size:
+                # sampling a prioritized batch of memory
                 self.memlock.acquire()
                 self.message("start batch",self.batches)
-                # sampling a prioritized batch of memory
-                s,s_n,a,r,d,idx,w = self.agent.sample_replay(self.batch_size)
+                s,s_n,a,r,d,idx,w,nid,*_ = self.agent.sample_replay(self.batch_size)
+                self.memlock.release()
+
                 # training network
                 target_q = self.agent.target_q(s_n, r, d)
                 self.netlock.acquire()
                 self.message("training network, loss =", self.agent.train(s, a, target_q, w))
                 self.netlock.release()
+
                 # computing the new TD error
                 target_q = self.agent.target_q(s_n, r, d)
                 masks = tf.one_hot(a, self.num_actions)
                 q_values = self.agent.model(s)
                 q_val = tf.reduce_sum(tf.multiply(q_values, masks), axis=1)
                 priority = q_val - target_q
+
                 # updating memory with the new priority
-                for i, p in zip(idx, priority):
-                    self.memory.update(i, p)
+                self.memlock.acquire()
+                for i, p, n in zip(idx, priority, nid):
+                    self.memory.update(i, p, n)
                 self.message("end batch",self.batches)
                 self.memlock.release()
+
                 self.batches+=1
                 # updating target model weights
                 if self.batches%self.update_target_per_batch == 0:

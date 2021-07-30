@@ -25,10 +25,19 @@ class NpEncoder(json.JSONEncoder):
 class DQNagent:
     def __init__(self, memory, save_path, in_shape, num_actions,\
                 DUELING=True, DOUBLE=True, DONE_PUNISH=False, n_step=1,\
-                gamma=0.99, middle_layer=None, verbose=False, message=empty_func):
+                gamma=0.99, middle_layer=None, verbose=False, message=None):
         # setting path for saving 
         self.save_path = save_path
-        self.message = message
+        # setting message method
+        if message is not None:
+            # set to custom message if provided 
+            self.message = message
+        elif verbose:
+            # set to print if no custom provided but verbose
+            self.message = print
+        else:
+            # nothing if no custom provided and not verbose
+            self.message = empty_func
         # DQN type 
         self.DUELING = DUELING
         self.DOUBLE = DOUBLE
@@ -72,8 +81,8 @@ class DQNagent:
             # define your custom model here if not provide middle_layer
             # NOTE: name your last layer as "last_layer"
             ###################################
-            layer1 = layers.Dense(32, activation="relu")(inputs)
-            last_layer = layers.Dense(32, activation="relu")(layer1)
+            layer1 = layers.Dense(16*self.num_actions, activation="relu")(inputs)
+            last_layer = layers.Dense(16*self.num_actions, activation="relu")(layer1)
             ###################################
         else:
             last_layer = middle_layer(inputs)
@@ -81,8 +90,6 @@ class DQNagent:
         action = layers.Dense(self.num_actions, activation="linear")(last_layer)
 
         if self.DUELING:
-            if self.verbose:
-                print("activated Dueling DQN")
             self.message("activated Dueling DQN")
 
             # v predict state value for dueling DQN
@@ -99,8 +106,6 @@ class DQNagent:
             exec("temp['%s'] = self.%s" % (i,i))
         with open(f'{self.save_path}agent_config.json', 'w') as f:
             json.dump(temp, f, cls=NpEncoder)
-            if self.verbose:
-                print(temp)
             self.message(temp)
 
     def load_variables(self):
@@ -110,23 +115,17 @@ class DQNagent:
             exec_str = ""
             for i in self.variables_to_save:
                 exec_str += ("self.%s=%s\n"%(i,str(data[i])))
-                if self.verbose:
-                    exec_str += ("print('%s =' ,self.%s)\n"%(i,i))
             exec(exec_str)
             self.message(exec_str)
 
     # saving / loading necessary data for rebuilding
     def save(self):
-        if self.verbose:
-            print("agent saving at", self.save_path)
         self.message("agent saving at", self.save_path)
         self.model.save(f'{self.save_path}model')
         self.model_target.save(f'{self.save_path}target')
         self.save_variables()
 
     def load(self):
-        if self.verbose:
-            print("loading from", self.save_path)
         self.message("agent loading from", self.save_path)
         self.model = load_model(f'{self.save_path}model')
         self.model_target = load_model(f'{self.save_path}target')
@@ -145,10 +144,10 @@ class DQNagent:
 
     # process and return memory sampling of given sive
     def sample_replay(self, batch_size):
-        sample, idx, is_weight = self.memory.sample(batch_size)
+        sample, idx, is_weight, nano_id = self.memory.sample(batch_size)
         state_sample, state_next_sample, action_sample, rewards_sample, done_sample = sample[0]
         
-        return np.stack(state_sample), np.stack(state_next_sample), action_sample.astype(np.int32), rewards_sample.astype(np.float64), np.stack(done_sample), idx, np.array([is_weight])
+        return np.stack(state_sample), np.stack(state_next_sample), action_sample.astype(np.int32), rewards_sample.astype(np.float64), np.stack(done_sample), idx, np.array([is_weight]), nano_id
 
     # process and save the given data into memory
     def save_memory(self, state, state_next, action, returns, done):

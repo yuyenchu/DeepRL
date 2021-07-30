@@ -9,39 +9,46 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 import threading
+from nanoid import generate
 
-N = 100000
-memlock = threading.Lock()
-netlock = threading.Lock()
-pm = PMemory(N, "./test_folder/testPM.h5")
-setting = {
-    "gym_name":"CartPole-v0",
-    "memory":pm, 
-    "save_path":"./test_folder", 
-    "memlock":memlock, 
-    "netlock":netlock, 
-    "verbose":True,
-    "n_step":1, 
-    "gamma":0.99
-}
-l = Learner("main", **setting)
-a = []
-for i in range(3):
-    a.append(Actor(i, **setting, get_weights=l.get_weights, net_update_per_epi=400, epsilon=1-i/10))
-    # print(a[i].epsilon)
-for b in a:
-    b.start()
-l.start()
-# testing killing thread
-sleep(1)
-print("sleep over")
-for b in a:
-    b.kill.set() 
-l.kill.set() 
-for b in a:
-    b.join()
-l.join()
-print("done with",len(pm),"memory")
+arr = np.zeros(3,dtype='S21')
+temp = generate()
+print(temp)
+arr[0]=temp
+print(arr[0])
+
+# N = 100000
+# memlock = threading.Lock()
+# netlock = threading.Lock()
+# pm = PMemory(N, "./test_folder/testPM.h5")
+# setting = {
+#     "gym_name":"CartPole-v0",
+#     "memory":pm, 
+#     "save_path":"./test_folder", 
+#     "memlock":memlock, 
+#     "netlock":netlock, 
+#     "verbose":True,
+#     "n_step":1, 
+#     "gamma":0.99
+# }
+# l = Learner("main", **setting)
+# a = []
+# for i in range(3):
+#     a.append(Actor(i, **setting, get_weights=l.get_weights, net_update_per_epi=400, epsilon=1-i/10))
+#     # print(a[i].epsilon)
+# for b in a:
+#     b.start()
+# l.start()
+# # testing killing thread
+# sleep(1)
+# print("sleep over")
+# for b in a:
+#     b.kill.set() 
+# l.kill.set() 
+# for b in a:
+#     b.join()
+# l.join()
+# print("done with",len(pm),"memory")
 
 # # testing saving / loading agent
 # a = DQNagent(pm, "./test_folder")

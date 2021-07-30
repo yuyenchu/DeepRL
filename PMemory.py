@@ -1,6 +1,7 @@
 import h5py
 import numpy as np
 from numpy import random
+from nanoid import generate
 
 class PMemory:
     def __init__(self, capacity, path, e = 0.01, a = 0.8, beta = 0.3, beta_increment_per_sampling = 0.0005):
@@ -49,17 +50,18 @@ class PMemory:
         self.beta = np.min([1., self.beta + self.beta_increment_per_sampling])
         s = np.arange(self.tree.total(), step=segment)+np.random.uniform(high=segment, size=n)
 
-        (idx, p, data) = self.tree.get(s)
+        idx, p, data, nano_id = self.tree.get(s)
 
         sampling_probabilities = p / self.tree.total()
         is_weight = np.power(self.tree.n_entries * sampling_probabilities, -self.beta)
         is_weight /= is_weight.max()
 
-        return np.dstack(data), idx, is_weight
+        return np.dstack(data), idx, is_weight, nano_id
 
-    def update(self, idx, error):
-        p = self._get_priority(error)
-        self.tree.update(idx, p)
+    def update(self, idx, error, nano_id=None):
+        if nano_id is None or self.tree.nano_id[idx-self.capacity+1]==nano_id:
+            p = self._get_priority(error)
+            self.tree.update(idx, p)
 
     def save(self):
         h5f = h5py.File(self.file_path, 'w')
@@ -78,10 +80,11 @@ class PMemory:
         h5f.close()
 
 class SumTree:
-    def __init__(self, capacity, tree=None, data=None, n_entries=None, write=None):
+    def __init__(self, capacity, tree=None, data=None, nano_id=None, n_entries=None, write=None):
         self.capacity = capacity
         self.tree = np.zeros(2 * capacity - 1) if tree is None else tree
         self.data = np.zeros(capacity, dtype=object) if data is None else data
+        self.nano_id = np.zeros(capacity, dtype='S21') if nano_id is None else nano_id
         self.n_entries = 0 if n_entries is None else n_entries
         self.write = 0 if write is None else write
 
@@ -122,6 +125,7 @@ class SumTree:
         idx = self.write + self.capacity - 1
 
         self.data[self.write] = data
+        self.nano_id[self.write] = generate()
         self.update(idx, p)
 
         self.write += 1
@@ -148,7 +152,7 @@ class SumTree:
         # idx = np.frompyfunc(retrieve_wrap, 1, 1)(s).astype(np.uint32)
         dataIdx = idx - self.capacity + 1
 
-        return (idx, self.tree[idx], self.data[dataIdx])
+        return (idx, self.tree[idx], self.data[dataIdx], self.nano_id[dataIdx])
 
 
 

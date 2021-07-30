@@ -25,11 +25,13 @@ class Manager(object):
             if len(ACTOR_SETTING) != ACTORS:
                 raise ValueError("length of ACTOR_SETTING does not match the amout of actors")
             for setting in ACTOR_SETTING:
-                self.agents.append(Actor(**BASIC_SETTING, **setting, get_weights=self.learner.get_weights))
+                self.agents.append(Actor(**BASIC_SETTING, **setting,\
+                    get_weights=self.learner.get_weights, kill_all_threads=self.kill_all_threads))
         else: 
             # defult for actors sharing same setting
             for i in range(ACTORS):
-                self.agents.append(Actor(i, **BASIC_SETTING, **ACTOR_SETTING, get_weights=self.learner.get_weights, epsilon=1-i/ACTORS))
+                self.agents.append(Actor(i, **BASIC_SETTING, **ACTOR_SETTING,
+                    get_weights=self.learner.get_weights, epsilon=1-i/ACTORS, kill_all_threads=self.kill_all_threads))
         
     # start all agents, including both learner and actors
     def start(self):
@@ -38,11 +40,11 @@ class Manager(object):
 
     # save / load necessary data for rebuilding
     def save(self):
-        self.manager.save()
+        self.learner.save()
         self.memory.save()
 
     def load(self):
-        self.manager.load()
+        self.learner.load()
         self.memory.load()
         for a in self.agents[1:]:
             a.update_weights()
