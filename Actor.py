@@ -48,6 +48,8 @@ class Actor(threading.Thread):
             self.env.seed(seed)
             np.random.seed(seed)
 
+        self.update_weights()
+
     # print formatting
     def message(self, *msg):
         if self.verbose:
@@ -63,6 +65,7 @@ class Actor(threading.Thread):
     # main loop
     def run(self):
         self.message("started")
+        running_reward = 0
         while not self.kill.is_set():
             state = np.array(self.env.reset())
             epi_frame = 1
@@ -88,7 +91,7 @@ class Actor(threading.Thread):
                 # dump buffer to memory pool
                 if len(self.buffer['done']) > self.max_buffer_length:
                     self.memlock.acquire()
-                    self.message("saving memory at episode",self.episodes)
+                    self.message("saving memory at episode",self.episodes,", reward =",running_reward)
                     self.agent.save_memory( self.buffer['state'][:-self.n_step],\
                                             self.buffer['state_next'][:-self.n_step],\
                                             self.buffer['action'][:-self.n_step],\
@@ -114,8 +117,9 @@ class Actor(threading.Thread):
             self.rewards.append(epi_reward)
             if len(self.rewards) > self.max_reward_length:
                 del self.rewards[:1]
-            if self.target_reward and np.mean(self.rewards) > self.target_reward:
-                self.message("target reward reached with running reward",np.mean(self.rewards))
+            running_reward = np.mean(self.rewards)
+            if self.target_reward and running_reward > self.target_reward:
+                self.message("target reward reached with running reward", running_reward)
                 self.kill_all_threads()
             # getting latest network parameters from learner
             if self.episodes%self.net_update_per_epi == 0:

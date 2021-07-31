@@ -66,7 +66,13 @@ class PMemory:
     def save(self):
         h5f = h5py.File(self.file_path, 'w')
         h5f.create_dataset('tree', data=self.tree.tree)
-        h5f.create_dataset('data', data=self.tree.data.tolist())
+        s,s_n,a,r,d,*_ = np.stack(self.tree.data, axis=1)
+        h5f.create_dataset('state', data=np.array(s.tolist()))
+        h5f.create_dataset('state_next', data=nnp.array(s_n.tolist()))
+        h5f.create_dataset('action', data=a.astype(np.int))
+        h5f.create_dataset('reward', data=r.astype(np.float))
+        h5f.create_dataset('done', data=d.astype(np.bool))
+        h5f.create_dataset('nano_id', data=self.tree.nano_id)
         h5f.create_dataset('n_entries', data=self.tree.n_entries)
         h5f.create_dataset('write', data=self.tree.write)
         h5f.close()
@@ -74,7 +80,14 @@ class PMemory:
     def load(self):
         h5f = h5py.File(self.file_path,'r')
         self.tree.tree = h5f['tree'][:]
-        self.tree.data = h5f['data'][:]
+        s = h5f['state'][:]
+        s_n = h5f['state_next'][:]
+        a = h5f['action'][:]
+        r = h5f['reward'][:]
+        d = h5f['done'][:]
+        for i,(S,S_N,A,R,D) in enumerate(zip(s,s_n,a,r,d)):
+            self.tree.data[i] = [S,S_N,A,R,D] 
+        self.tree.nano_id = h5f['nano_id'][:]
         self.tree.n_entries = h5f['n_entries'][()]
         self.tree.write = h5f['write'][()]
         h5f.close()

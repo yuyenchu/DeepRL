@@ -9,7 +9,7 @@ from datetime import datetime
 from DQNagent import DQNagent
 
 class Learner(threading.Thread):
-    def __init__(self, id, gym_name, memory, save_path, memlock, netlock, update_target_per_batch=30,\
+    def __init__(self, id, gym_name, memory, save_path, memlock, netlock, update_target_per_batch=3,\
                 seed=None, verbose=False, n_step=1, gamma=0.99, batch_size=1024, **settings):
         # threading stuff
         threading.Thread.__init__(self)

@@ -11,16 +11,18 @@ from tensorflow.keras import layers
 import threading
 from nanoid import generate
 
-arr = np.zeros(3,dtype='S21')
-temp = generate()
-print(temp)
-arr[0]=temp
-print(arr[0])
+# arr = np.zeros(3,dtype='S21')
+# temp = generate()
+# print(temp)
+# arr[0]=temp
+# print(arr[0])
 
-# N = 100000
+N = 1000000
 # memlock = threading.Lock()
 # netlock = threading.Lock()
-# pm = PMemory(N, "./test_folder/testPM.h5")
+pm = PMemory(N, "./test_folder/testPM.h5")
+pm.load()
+print(pm.tree.data[0])
 # setting = {
 #     "gym_name":"CartPole-v0",
 #     "memory":pm, 
