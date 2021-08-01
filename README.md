@@ -38,6 +38,8 @@ Haley Lin (coeditor) - [Github](https://github.com/HaleyLin2006) - haleylin2006@
 
 ## Version History
 
+* 0.1-beta
+    * Multi-thread version complete
 * 0.1-alpha
     * Prototype Complete (partial functions incomplete)
 * 0.0-alpha
