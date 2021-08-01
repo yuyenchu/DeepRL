@@ -10,7 +10,7 @@ from DQNagent import DQNagent
 
 class Learner(threading.Thread):
     def __init__(self, id, gym_name, memory, save_path, memlock, netlock, update_target_per_batch=3,\
-                seed=None, verbose=False, n_step=1, gamma=0.99, batch_size=1024, **settings):
+                seed=None, verbose=False, n_step=1, gamma=0.99, batch_size=1024, mini_batch_num=2, **settings):
         # threading stuff
         threading.Thread.__init__(self)
         self.kill = threading.Event()
@@ -26,6 +26,7 @@ class Learner(threading.Thread):
         self.agent = DQNagent(memory, save_path, self.in_shape, self.num_actions, n_step=n_step, gamma=gamma, message=self.message, **settings)
         # constant values
         self.batch_size = batch_size
+        self.mini_batch_num = mini_batch_num
         self.update_target_per_batch = update_target_per_batch
         # non-constant values
         self.batches = 0
@@ -61,10 +62,15 @@ class Learner(threading.Thread):
                 self.memlock.release()
 
                 # training network
+                loss = 0
                 target_q = self.agent.target_q(s_n, r, d)
-                self.netlock.acquire()
-                self.message("training network, loss =", self.agent.train(s, a, target_q, w))
-                self.netlock.release()
+                mini_idx = [i*round(self.batch_size/self.mini_batch_num) for i in range(self.mini_batch_num)]+[self.batch_size]
+                for i in range(1,self.mini_batch_num+1):
+                    self.netlock.acquire()
+                    start, end = mini_idx[i-1], mini_idx[i]
+                    loss += self.agent.train(s[start:end], a[start:end], target_q[start:end], w[start:end])
+                    self.netlock.release()
+                self.message("training network, loss =", loss)
 
                 # computing the new TD error
                 target_q = self.agent.target_q(s_n, r, d)

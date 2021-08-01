@@ -26,7 +26,8 @@ BASIC_SETTING = {
 }
 LEARNER_SETTING = {
     "id":   "main",
-    "batch_size": 512,
+    "batch_size":       512,
+    "mini_batch_num":   1,
     "update_target_per_batch": 4,
 }
 ACTOR_SETTING = [

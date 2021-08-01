@@ -6,7 +6,7 @@ from Actor import Actor
 from Learner import Learner
 
 class Manager(object):
-    def __init__(self, mem_save_path, MEM_LENGTH=10000, ACTORS=10,\
+    def __init__(self, mem_save_path, MEM_LENGTH=10000, ACTORS=10, e=0.4, a=7\
                 BASIC_SETTING={}, LEARNER_SETTING={}, ACTOR_SETTING={}):
         # setting memory pool
         self.memory = PMemory(MEM_LENGTH, mem_save_path)
@@ -26,12 +26,15 @@ class Manager(object):
                 raise ValueError("length of ACTOR_SETTING does not match the amout of actors")
             for setting in ACTOR_SETTING:
                 self.agents.append(Actor(**BASIC_SETTING, **setting,\
-                    get_weights=self.learner.get_weights, kill_all_threads=self.kill_all_threads))
+                                        get_weights=self.learner.get_weights,\
+                                        kill_all_threads=self.kill_all_threads))
         else: 
             # defult for actors sharing same setting
             for i in range(ACTORS):
-                self.agents.append(Actor(i, **BASIC_SETTING, **ACTOR_SETTING,
-                    get_weights=self.learner.get_weights, epsilon=1-i/ACTORS, kill_all_threads=self.kill_all_threads))
+                self.agents.append(Actor(i, **BASIC_SETTING, **ACTOR_SETTING,\
+                                        epsilon=e**(1+i*a/(ACTORS-1)),\
+                                        get_weights=self.learner.get_weights, \
+                                        kill_all_threads=self.kill_all_threads))
         
     # start all agents, including both learner and actors
     def start(self):

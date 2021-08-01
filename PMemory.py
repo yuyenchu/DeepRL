@@ -48,7 +48,7 @@ class PMemory:
         priorities = []
 
         self.beta = np.min([1., self.beta + self.beta_increment_per_sampling])
-        s = np.arange(self.tree.total(), step=segment)+np.random.uniform(high=segment, size=n)
+        s = np.linspace(0, self.tree.total(), num=n, endpoint=False)+np.random.uniform(high=segment, size=n)
 
         idx, p, data, nano_id = self.tree.get(s)
 
