@@ -1,3 +1,5 @@
+# source: https://github.com/jcborges/dqn-per/blob/master/Memory.py
+
 import h5py
 import numpy as np
 from numpy import random
