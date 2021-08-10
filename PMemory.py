@@ -70,7 +70,7 @@ class PMemory:
         h5f.create_dataset('tree', data=self.tree.tree)
         s,s_n,a,r,d,*_ = np.stack(self.tree.data, axis=1)
         h5f.create_dataset('state', data=np.array(s.tolist()))
-        h5f.create_dataset('state_next', data=nnp.array(s_n.tolist()))
+        h5f.create_dataset('state_next', data=np.array(s_n.tolist()))
         h5f.create_dataset('action', data=a.astype(np.int))
         h5f.create_dataset('reward', data=r.astype(np.float))
         h5f.create_dataset('done', data=d.astype(np.bool))
