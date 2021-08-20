@@ -25,7 +25,8 @@ class NpEncoder(json.JSONEncoder):
 class DQNagent:
     def __init__(self, memory, save_path, in_shape, num_actions,\
                 DUELING=True, DOUBLE=True, DONE_PUNISH=False, n_step=1,\
-                gamma=0.99, middle_layer=None, verbose=False, message=None):
+                gamma=0.99, middle_layer=None, verbose=False, message=None,\
+                loss_setting={}, optimizer_setting={}):
         # setting path for saving 
         self.save_path = save_path
         # setting message method
@@ -65,8 +66,8 @@ class DQNagent:
             add(sample): store a batch of sample to memory, return nothing
             sample(n): return n number of memory in format (sample, sample_index, sample_weight)
         '''
-        self.loss_function = keras.losses.Huber()
-        self.optimizer = keras.optimizers.Adam()
+        self.loss_function = keras.losses.Huber(**loss_setting)
+        self.optimizer = keras.optimizers.Adam(**optimizer_setting)
         # middle layer MUST use sequential model (NOT functional api)
         self.model = self.build_model(middle_layer)
         self.model_target = self.build_model(middle_layer)

@@ -6,8 +6,9 @@ from Actor import Actor
 from Learner import Learner
 
 class Manager(object):
-    def __init__(self, mem_save_path, MEM_LENGTH=10000, ACTORS=10, e=0.4, a=7, \
-                BASIC_SETTING={}, LEARNER_SETTING={}, ACTOR_SETTING={}):
+    def __init__(self, mem_save_path, MEM_LENGTH=10000, ACTORS=10,\
+                BASIC_SETTING={}, LEARNER_SETTING={}, ACTOR_SETTING={},\
+                e=0.4, a=7):
         # setting memory pool
         self.memory = PMemory(MEM_LENGTH, mem_save_path)
         # setting thread locks
