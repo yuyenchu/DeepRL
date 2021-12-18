@@ -66,25 +66,25 @@ class D3QNgym:
         self.reward_target = reward_target
     
     def setup(self):
-      # setup everything needed to start run
+        # setup everything needed to start run
 
-      optimizer = keras.optimizers.Adam(learning_rate=0.00025, clipnorm=1.0)
+        optimizer = keras.optimizers.Adam(learning_rate=0.00025, clipnorm=1.0)
 
-      # Experience replay buffers
-      self.action_history = []
-      self.state_history = []
-      # state_next_history = []
-      # rewards_history = []
-      self.done_history = []
-      self.episode_reward_history = []
-      self.state_n_next_history = []
-      self.returns_history = []
-      self.running_reward = 0
-      self.episode_count = 0
-      self.frame_count = 0
-      self.max_loop = self.frame_count//self.max_frame
-      
-      self.epsilon = 1.0  # Epsilon greedy parameter
+        # Experience replay buffers
+        self.action_history = []
+        self.state_history = []
+        # state_next_history = []
+        # rewards_history = []
+        self.done_history = []
+        self.episode_reward_history = []
+        self.state_n_next_history = []
+        self.returns_history = []
+        self.running_reward = 0
+        self.episode_count = 0
+        self.frame_count = 0
+        self.max_loop = self.frame_count//self.max_frame
+        
+        self.epsilon = 1.0  # Epsilon greedy parameter
     
     def run(self):
         self.setup()

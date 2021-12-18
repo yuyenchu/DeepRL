@@ -211,3 +211,11 @@ class DQNagent:
         updated_q_values = updated_q_values * (1 - done_sample) - done_sample*self.DONE_PUNISH
 
         return updated_q_values
+
+    def train_step(self, batch_size):
+        state_sample, state_next_sample, action_sample, rewards_sample, done_sample, _, isWeight, _ = self.agent.sample_replay(batch_size)
+        updated_q_values = self.target_q(state_next_sample, rewards_sample, done_sample)
+        return self.train(state_sample, action_sample, updated_q_values)
+
+    def update_target_network(self):
+        self.set_weights(self.get_weights()[0])
