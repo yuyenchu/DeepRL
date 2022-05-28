@@ -1,19 +1,28 @@
 import numpy as np
-import threading
+# import threading
 
 from PMemory import PMemory
 from Actor import Actor
 from Learner import Learner
 
+import config as cfg
+if cfg.USE_MULTIPROCESSING:
+    import multiprocessing as worker
+    from Multi_PMemory import PMemory
+else:
+    import threading as worker
+    from PMemory import PMemory
 class Manager(object):
     def __init__(self, mem_save_path, MEM_LENGTH=10000, ACTORS=10,\
-                BASIC_SETTING={}, LEARNER_SETTING={}, ACTOR_SETTING={},\
+                BASIC_SETTING={}, MEMORY_SETTING={}, LEARNER_SETTING={}, ACTOR_SETTING={},\
                 e=0.4, a=7):
         # setting memory pool
-        self.memory = PMemory(MEM_LENGTH, mem_save_path)
+        self.memory = PMemory(MEM_LENGTH, mem_save_path, **MEMORY_SETTING)
         # setting thread locks
-        self.memlock = threading.Lock()
-        self.netlock = threading.Lock()
+        # self.memlock = threading.Lock()
+        # self.netlock = threading.Lock()
+        self.memlock = worker.Lock()
+        self.netlock = worker.Lock()
         BASIC_SETTING["memory"]  = self.memory
         BASIC_SETTING["memlock"] = self.memlock
         BASIC_SETTING["netlock"] = self.netlock

@@ -1,13 +1,15 @@
-# source: https://github.com/jcborges/dqn-per/blob/master/Memory.py
-
+from posix import environ
 import h5py
 import numpy as np
-from numpy import random
+import gym
+from  multiprocessing import Array
+from ctypes import c_char_p
+# from numpy import random
 from nanoid import generate
 
 class PMemory:
     def __init__(self, capacity, path, e = 0.01, a = 0.8, beta = 0.3, beta_increment_per_sampling = 0.0005, gym_name = None):
-        self.tree = SumTree(capacity)
+        self.tree = SumTree(capacity, env=gym_name)
         self.capacity = capacity
         self.e = e
         self.a = a
@@ -95,11 +97,14 @@ class PMemory:
         h5f.close()
 
 class SumTree:
-    def __init__(self, capacity, tree=None, data=None, nano_id=None, n_entries=None, write=None):
+    def __init__(self, capacity, tree=None, data=None, nano_id=None, n_entries=None, write=None, env=None):
+        e = gym.make(env)
+        state_info = (e.observation_space.shape, e.observation_space.dtype)
+        action_info = (e.action_space.shape, e.action_space.dtype)
         self.capacity = capacity
-        self.tree = np.zeros(2 * capacity - 1) if tree is None else tree
-        self.data = np.zeros(capacity, dtype=object) if data is None else data
-        self.nano_id = np.zeros(capacity, dtype='S21') if nano_id is None else nano_id
+        self.tree = Array('i',2 * capacity - 1) if tree is None else tree
+        self.data = DataStore(state_info, action_info, capacity) if data is None else data
+        self.nano_id = Array(c_char_p, capacity) if nano_id is None else nano_id
         self.n_entries = 0 if n_entries is None else n_entries
         self.write = 0 if write is None else write
 
@@ -140,7 +145,7 @@ class SumTree:
         idx = self.write + self.capacity - 1
 
         self.data[self.write] = data
-        self.nano_id[self.write] = generate()
+        self.nano_id[self.write] = generate().encode()
         self.update(idx, p)
 
         self.write += 1
@@ -167,36 +172,70 @@ class SumTree:
         # idx = np.frompyfunc(retrieve_wrap, 1, 1)(s).astype(np.uint32)
         dataIdx = idx - self.capacity + 1
 
-        return (idx, self.tree[idx], self.data[dataIdx], self.nano_id[dataIdx])
+        return (idx, self.tree[idx], self.data[dataIdx], self.nano_id[dataIdx].decode())
 
+class DataStore:
+    # state_info, action_info, reward_info should contain info about 
+    # data shape and type for state, action of the environment
+    # example: (state_shape, state_type) = state_info
+    def __init__(self, state_info, action_info, capacity):
+        self.capacity = capacity
+        self.state_info = state_info
+        self.action_info = action_info
+        # self.reward_info = reward_info
+        # initializing shared memory arrays
+        self.state_store = self._make_array(self.state_info)
+        self.state_next_store = self._make_array(self.state_info)
+        self.action_store = self._make_array(self.action_info)
+        # self.reward_store = self._make_array(self.reward_info)
+        self.reward_store = Array(np.ctypeslib.as_ctypes_type(float), self.capacity)
+        self.done_store = Array(np.ctypeslib.as_ctypes_type(bool), self.capacity)
 
+    def _get_flat_shape(self, shape):
+        flattened_shape = 1
+        for s in shape:
+            flattened_shape *= s
+        return flattened_shape
 
-    # def sample(self, n):
-    #     batch = []
-    #     idxs = []
-    #     segment = self.tree.total() / n
-    #     priorities = []
+    def _make_array(self, info):
+        shape, type = info
+        flat_shape = self._get_flat_shape(shape)
+        ctypes_type = np.ctypeslib.as_ctypes_type(type)
+        return Array(ctypes_type, flat_shape*self.capacity)
+    
+    def _get_np_item(self, arr, key, shape):
+        n = self._get_flat_shape(shape)
+        item = np.array(arr[key:key+n])
+        return np.reshape(item, shape)
+    
+    def _put_np_item(self, arr, key, value):
+        item = value.flatten()
+        n = len(item)
+        arr[key:key+n] = item
 
-    #     self.beta = np.min([1., self.beta + self.beta_increment_per_sampling])
+    def __getitem__(self, key):
+        if type(key) is slice:
+            raise NotImplementedError()
+        items = [
+            self._get_np_item(self.state_store, key, self.state_info[0]),
+            self._get_np_item(self.state_next_store, key, self.state_info[0]),
+            self._get_np_item(self.action_store, key, self.action_info[0]),
+            # self._get_np_item(self.reward_store, key, self.reward_info[0]),
+            self.reward_store[key],
+            self.done_store[key],
+        ]
+        return np.array(items)
 
-    #     for i in range(n):
-    #         a = segment * i
-    #         b = segment * (i + 1)
-
-    #         s = random.uniform(a, b)
-    #         (idx, p, data) = self.tree.get(s)
-    #         priorities.append(p)
-    #         batch.append(data)
-    #         idxs.append(idx)
-
-    #     sampling_probabilities = priorities / self.tree.total()
-    #     is_weight = np.power(self.tree.n_entries * sampling_probabilities, -self.beta)
-    #     is_weight /= is_weight.max()
-
-    #     return np.dstack(batch), idxs, is_weight
-
-    # def get(self, s: float):
-    #     idx = self._retrieve(0, s)
-    #     dataIdx = idx - self.capacity + 1
-
-    #     return (idx, self.tree[idx], self.data[dataIdx])
+    # params: 
+    #   - value: a non-object type numpy array to be set
+    #   - key: index to store value at 
+    def __setitem__(self, value, key):
+        if type(key) is slice:
+            raise NotImplementedError()
+        s,s_n,a,r,d,*_ = value
+        self._put_np_item(self.state_store, key, s)
+        self._put_np_item(self.state_next_store, key, s_n)
+        self._put_np_item(self.action_store, key, a)
+        # self._put_np_item(self.reward_store, key, r)
+        self.reward_store[key] = r
+        self.done_store[key] = d

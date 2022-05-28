@@ -1,20 +1,30 @@
 import gym
-import queue
-import threading
+import os
+# import threading
 import numpy as np
 from numpy import random
 from datetime import datetime
 
+import config as cfg
+if cfg.USE_MULTIPROCESSING:
+    import multiprocessing as worker
+    OBJ = worker.Process
+else:
+    import threading as worker
+    OBJ = worker.Thread
 from DQNagent import DQNagent
 
-class Actor(threading.Thread):
+# class Actor(threading.Thread):
+class Actor(OBJ):
     def __init__(self, id, gym_name, memory, save_path, memlock, netlock, get_weights, kill_all_threads,\
                 seed=None, verbose=False, net_update_per_epi=100, max_buffer_length=10000, n_step=1,\
                 gamma=0.99, epsilon=1.0, epsilon_min=0.2, epsilon_decay=0, random_act=0, target_reward=None,\
                 max_frame_per_episode=-1, max_reward_length=100, **settings):
         # threading stuff
-        threading.Thread.__init__(self)
-        self.kill = threading.Event()
+        # threading.Thread.__init__(self)
+        super().__init__()
+        # self.kill = threading.Event()
+        self.kill = worker.Event()
         self.id = id
         self.verbose = verbose
         self.memlock = memlock
@@ -53,7 +63,10 @@ class Actor(threading.Thread):
     # print formatting
     def message(self, *msg):
         if self.verbose:
-            print("["+str(datetime.now())+"] Actor", self.id, "-", *msg)
+            # print("["+str(datetime.now())+"] Actor", self.id, "-", *msg)
+            msg_out = f'[{str(datetime.now())},{os.getpid()}] Actor {self.id} - {" ".join(msg)}'
+            # print(msg_out)
+            os.system(f'echo "{msg_out}"')
 
     # getting network parameters from learner
     def update_weights(self):
@@ -91,7 +104,7 @@ class Actor(threading.Thread):
                 # dump buffer to memory pool
                 if len(self.buffer['done']) > self.max_buffer_length:
                     self.memlock.acquire()
-                    self.message("saving memory at episode",self.episodes,", reward =",running_reward)
+                    self.message(f"saving memory at episode {self.episodes} reward = {running_reward}")
                     self.agent.save_memory( self.buffer['state'][:-self.n_step],\
                                             self.buffer['state_next'][:-self.n_step],\
                                             self.buffer['action'][:-self.n_step],\
@@ -119,7 +132,7 @@ class Actor(threading.Thread):
                 del self.rewards[:1]
             running_reward = np.mean(self.rewards)
             if self.target_reward and running_reward > self.target_reward:
-                self.message("target reward reached with running reward", running_reward)
+                self.message(f"target reward reached with running reward {running_reward}")
                 self.kill_all_threads()
             # getting latest network parameters from learner
             if self.episodes%self.net_update_per_epi == 0:

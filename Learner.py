@@ -1,19 +1,30 @@
 import gym
-import queue
-import threading
+import os
+# import threading
 import numpy as np
 import tensorflow as tf
 from numpy import random
 from datetime import datetime
 
+import config as cfg
+if cfg.USE_MULTIPROCESSING:
+    import multiprocessing as worker
+    OBJ = worker.Process
+else:
+    import threading as worker
+    OBJ = worker.Thread
+
 from DQNagent import DQNagent
 
-class Learner(threading.Thread):
+# class Learner(threading.Thread):
+class Learner(OBJ):
     def __init__(self, id, gym_name, memory, save_path, memlock, netlock, update_target_per_batch=3,\
                 seed=None, verbose=False, n_step=1, gamma=0.99, batch_size=1024, mini_batch_num=2, **settings):
         # threading stuff
-        threading.Thread.__init__(self)
-        self.kill = threading.Event()
+        # threading.Thread.__init__(self)
+        super().__init__()
+        # self.kill = threading.Event()
+        self.kill = worker.Event()
         self.id = id
         self.verbose = verbose
         self.memlock = memlock
@@ -44,7 +55,10 @@ class Learner(threading.Thread):
     # print formatting
     def message(self, *msg):
         if self.verbose:
-            print("["+str(datetime.now())+"] Learner", self.id, "-", *msg)
+            # print("["+str(datetime.now())+"] Learner", self.id, "-", *msg)
+            msg_out = f'[{str(datetime.now())},{os.getpid()}] Learner {self.id} - {" ".join(msg)}'
+            # print(msg_out)
+            os.system(f'echo "{msg_out}"')
     
     # wrapper for agent.get_weights()
     def get_weights(self):
@@ -57,7 +71,7 @@ class Learner(threading.Thread):
             if len(self.memory) > self.batch_size:
                 # sampling a prioritized batch of memory
                 self.memlock.acquire()
-                self.message("start batch",self.batches)
+                self.message(f"start batch {self.batches}")
                 s,s_n,a,r,d,idx,w,nid,*_ = self.agent.sample_replay(self.batch_size)
                 self.memlock.release()
 
@@ -70,7 +84,7 @@ class Learner(threading.Thread):
                     start, end = mini_idx[i-1], mini_idx[i]
                     loss += self.agent.train(s[start:end], a[start:end], target_q[start:end], w[start:end])
                     self.netlock.release()
-                self.message("training network, loss =", loss)
+                self.message(f"training network, loss = {loss}")
 
                 # computing the new TD error
                 target_q = self.agent.target_q(s_n, r, d)
@@ -83,7 +97,7 @@ class Learner(threading.Thread):
                 self.memlock.acquire()
                 for i, p, n in zip(idx, priority, nid):
                     self.memory.update(i, p, n)
-                self.message("end batch",self.batches)
+                self.message(f"end batch {self.batches}")
                 self.memlock.release()
 
                 self.batches+=1

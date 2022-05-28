@@ -24,6 +24,9 @@ BASIC_SETTING = {
     "middle_layer": actor_layers,
     "DONE_PUNISH":  True,
 }
+MEMORY_SETTING = {
+    "gym_name": "CartPole-v0"
+}
 LEARNER_SETTING = {
     "id":   "main",
     "batch_size":       512,
@@ -60,7 +63,7 @@ ACTOR_SETTING = [
 }
 ]
 
-manager = Manager(MEM_SAVE_PATH, MEM_LENGTH, ACTORS, BASIC_SETTING, LEARNER_SETTING, ACTOR_SETTING)
+manager = Manager(MEM_SAVE_PATH, MEM_LENGTH, ACTORS, BASIC_SETTING, MEMORY_SETTING, LEARNER_SETTING, ACTOR_SETTING)
 manager.start()
 # sleep(1800)
 # print("time up")

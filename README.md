@@ -38,11 +38,13 @@ Haley Lin (coeditor) - [Github](https://github.com/HaleyLin2006) - haleylin2006@
 
 ## Version History
 
-* 0.1-beta
-    * Multi-thread version complete
-* 0.1-alpha
+* 0.2.0-alpha
+    * Multi-process version in development 
+* 0.1.1-beta
+    * Multi-thread version Complete
+* 0.1.0-alpha
     * Prototype Complete (partial functions incomplete)
-* 0.0-alpha
+* 0.0.0-alpha
     * In Development (incomplete)
 
 ## License
