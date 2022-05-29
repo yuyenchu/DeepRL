@@ -5,6 +5,7 @@ import numpy as np
 from numpy import random
 from datetime import datetime
 
+import models
 import config as cfg
 if cfg.USE_MULTIPROCESSING:
     import multiprocessing as worker
@@ -16,25 +17,29 @@ from DQNagent import DQNagent
 
 # class Actor(threading.Thread):
 class Actor(OBJ):
-    def __init__(self, id, gym_name, memory, save_path, memlock, netlock, get_weights, kill_all_threads,\
+    # def __init__(self):
+    #     # threading stuff
+    #     # threading.Thread.__init__(self)
+    #     super(Actor, self).__init__()
+
+    def _initialize(self, id, gym_name, memory, save_path, memlock, netlock, weights_register,\
                 seed=None, verbose=False, net_update_per_epi=100, max_buffer_length=10000, n_step=1,\
                 gamma=0.99, epsilon=1.0, epsilon_min=0.2, epsilon_decay=0, random_act=0, target_reward=None,\
                 max_frame_per_episode=-1, max_reward_length=100, **settings):
-        # threading stuff
-        # threading.Thread.__init__(self)
-        super().__init__()
         # self.kill = threading.Event()
         self.kill = worker.Event()
         self.id = id
         self.verbose = verbose
         self.memlock = memlock
         self.netlock = netlock
-        self.get_weights = get_weights
-        self.kill_all_threads = kill_all_threads
+        self.weights_register = weights_register
+        # self.get_weights = get_weights
+        # self.kill_all_threads = kill_all_threads
         # declaring objects
         self.env = gym.make(gym_name)
         self.in_shape = self.env.observation_space.shape
         self.num_actions = self.env.action_space.n
+        settings['middle_layer'] = models.LAYERS
         self.agent = DQNagent(memory, save_path, self.in_shape, self.num_actions, n_step=n_step, gamma=gamma, message=self.message, **settings)
         # constant values
         self.n_step = n_step
@@ -57,8 +62,13 @@ class Actor(OBJ):
         if isinstance(seed, int) and seed > 0:
             self.env.seed(seed)
             np.random.seed(seed)
-
+        self.weights_info = self._get_weights_info()
         self.update_weights()
+
+    def _get_weights_info(self):
+        w1, w2 = self.agent.get_weights()
+        weights = w1+w2
+        return [(w.shape, w.dtype, len(w.tobytes())) for w in weights]
 
     # print formatting
     def message(self, *msg):
@@ -70,13 +80,31 @@ class Actor(OBJ):
 
     # getting network parameters from learner
     def update_weights(self):
-        self.netlock.acquire()
-        self.message("updating network weights")
-        self.agent.set_weights(*self.get_weights())
-        self.netlock.release()
-    
+        # self.netlock.acquire()
+        # self.message("updating network weights")
+        # self.agent.set_weights(*self.get_weights())
+        # self.netlock.release()
+        if len(self.weights_register.value) == 0:
+            return
+        weights = self.weights_register.value
+        # print('actor',len(weights),len(self.weights_info))
+        # assert len(weights) == len(self.weights_info)
+        decoded_weights = []
+        idx = 0
+        for s, t, l in self.weights_info:
+            w = weights[idx:idx+l]
+            idx += l
+            weight = np.frombuffer(w, dtype=t)
+            if len(s) > 0:
+                weight = weight.reshape(s)
+            decoded_weights.append(weight)
+        idx = len(decoded_weights)//2
+        w1, w2 = decoded_weights[:idx], decoded_weights[idx:]
+        self.agent.set_weights(w1, w2)
+
     # main loop
     def run(self):
+        self._initialize(**self._kwargs)
         self.message("started")
         running_reward = 0
         while not self.kill.is_set():
@@ -133,7 +161,7 @@ class Actor(OBJ):
             running_reward = np.mean(self.rewards)
             if self.target_reward and running_reward > self.target_reward:
                 self.message(f"target reward reached with running reward {running_reward}")
-                self.kill_all_threads()
+                # self.kill_all_threads()
             # getting latest network parameters from learner
             if self.episodes%self.net_update_per_epi == 0:
                 self.update_weights()

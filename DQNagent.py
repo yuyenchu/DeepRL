@@ -42,7 +42,7 @@ class DQNagent:
         # DQN type 
         self.DUELING = DUELING
         self.DOUBLE = DOUBLE
-        self.DONE_PUNISH = DONE_PUNISH
+        self.DONE_PUNISH = int(DONE_PUNISH)
         # agent config
         self.num_actions = num_actions
         self.in_shape = in_shape
@@ -156,7 +156,9 @@ class DQNagent:
         q_values = self.model(np.array(state))
         q_val = tf.reduce_sum(tf.multiply(q_values, masks), axis=1)
         target_q_val = self.target_q(np.array(state_next), returns, np.array(done))
-        priority = q_val - target_q_val
+        priority = (q_val - target_q_val).numpy()
+        # print(priority.shape,len(state))
+        # print(tf.shape(q_val), tf.shape(target_q_val))
 
         for p,s,s_n,a,r,d in zip(priority, state, state_next, action, returns, done):
             self.memory.add([s,s_n,a,r,d], p)
@@ -179,6 +181,7 @@ class DQNagent:
         return action
 
     # train model with given sample and target(updated_q_values)
+    @tf.function
     def train(self, state_sample, action_sample, updated_q_values, sample_weight=None):
         # create a mask so we only calculate loss on the updated Q-values
         masks = tf.one_hot(action_sample, self.num_actions)
@@ -196,18 +199,25 @@ class DQNagent:
             grads = tape.gradient(loss, self.model.trainable_variables)
             self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
 
-        return loss.numpy() 
+        return loss
 
     # compute the target q values of given sample
+    @tf.function
     def target_q(self, state_next_sample, rewards_sample, done_sample):
+        done_sample = tf.cast(done_sample, tf.float32)
+        rewards_sample = tf.cast(rewards_sample, tf.float32)
         if self.DOUBLE:
-            future_rewards = self.model_target(state_next_sample).numpy()
-            future_actions = np.argmax(self.model(state_next_sample), axis=1)
-            future_rewards = future_rewards[range(len(done_sample)),future_actions]
+            future_rewards = self.model_target(state_next_sample)
+            future_actions = tf.argmax(self.model(state_next_sample), axis=1, output_type=tf.int32)
+            # prepare row indices
+            row_indices = tf.range(tf.shape(future_actions)[0], dtype=tf.int32)
+            # zip row indices with column indices
+            full_indices = tf.stack([row_indices, future_actions], axis=1)
+            future_rewards = tf.gather_nd(future_rewards,full_indices)
         else:
-            future_rewards = np.argmax(self.model_target(state_next_sample), axis=1)
-
-        updated_q_values = rewards_sample + self.gamma**self.n_step * np.nan_to_num(future_rewards)
+            future_rewards = tf.argmax(self.model_target(state_next_sample), axis=1)
+        future_rewards = tf.where(tf.math.is_nan(future_rewards), tf.zeros_like(future_rewards), future_rewards)
+        updated_q_values = rewards_sample + self.gamma**self.n_step * future_rewards
         updated_q_values = updated_q_values * (1 - done_sample) - done_sample*self.DONE_PUNISH
 
         return updated_q_values
@@ -215,7 +225,7 @@ class DQNagent:
     def train_step(self, batch_size):
         state_sample, state_next_sample, action_sample, rewards_sample, done_sample, _, isWeight, _ = self.agent.sample_replay(batch_size)
         updated_q_values = self.target_q(state_next_sample, rewards_sample, done_sample)
-        return self.train(state_sample, action_sample, updated_q_values)
+        return self.train(state_sample, action_sample, updated_q_values).numpy() 
 
     def update_target_network(self):
         self.set_weights(self.get_weights()[0])

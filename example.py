@@ -21,7 +21,7 @@ BASIC_SETTING = {
     "seed":     42,
     "n_step":   4, 
     "gamma":    0.75,
-    "middle_layer": actor_layers,
+    # "middle_layer": actor_layers,
     "DONE_PUNISH":  True,
 }
 MEMORY_SETTING = {
@@ -63,8 +63,9 @@ ACTOR_SETTING = [
 }
 ]
 
-manager = Manager(MEM_SAVE_PATH, MEM_LENGTH, ACTORS, BASIC_SETTING, MEMORY_SETTING, LEARNER_SETTING, ACTOR_SETTING)
-manager.start()
-# sleep(1800)
-# print("time up")
-# manager.kill_all_threads()
+if __name__ == '__main__':
+    manager = Manager(MEM_SAVE_PATH, MEM_LENGTH, ACTORS, BASIC_SETTING, MEMORY_SETTING, LEARNER_SETTING, ACTOR_SETTING)
+    manager.start()
+    # sleep(1800)
+    # print("time up")
+    # manager.kill_all_threads()

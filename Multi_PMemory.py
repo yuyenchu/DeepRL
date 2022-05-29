@@ -157,6 +157,7 @@ class SumTree:
 
     # update priority
     def update(self, idx, p):
+        p = int(p)
         change = p - self.tree[idx]
 
         self.tree[idx] = p
@@ -171,8 +172,16 @@ class SumTree:
         # idx = np.array(list(map(retrieve_wrap, s)))
         # idx = np.frompyfunc(retrieve_wrap, 1, 1)(s).astype(np.uint32)
         dataIdx = idx - self.capacity + 1
+        tree_out = [None]*len(idx)
+        data_out = [None]*len(idx)
+        nano_id_out = [None]*len(idx)
+        for curr, (i, dI) in enumerate(zip(idx, dataIdx)):
+            tree_out[curr] = self.tree[i]
+            data_out[curr] = self.data[dI]
+            nano_id_out[curr] = self.nano_id[dI].decode()
 
-        return (idx, self.tree[idx], self.data[dataIdx], self.nano_id[dataIdx].decode())
+        # return (idx, self.tree[idx], self.data[dataIdx], self.nano_id[dataIdx].decode())
+        return (idx, np.array(tree_out), np.array(data_out), np.array(nano_id_out))
 
 class DataStore:
     # state_info, action_info, reward_info should contain info about 
@@ -203,23 +212,29 @@ class DataStore:
         ctypes_type = np.ctypeslib.as_ctypes_type(type)
         return Array(ctypes_type, flat_shape*self.capacity)
     
-    def _get_np_item(self, arr, key, shape):
+    def _get_np_item(self, arr, key, info):
+        shape, _ = info
         n = self._get_flat_shape(shape)
         item = np.array(arr[key:key+n])
-        return np.reshape(item, shape)
+        return np.reshape(item, shape) if len(shape)>0 else item
     
-    def _put_np_item(self, arr, key, value):
-        item = value.flatten()
-        n = len(item)
+    def _put_np_item(self, arr, key, value, info):
+        shape, type = info
+        if len(shape) > 0:
+            item = value.flatten().astype(type)
+            n = len(item)
+        else:
+            item = np.array([value]).astype(type)
+            n = 1
         arr[key:key+n] = item
 
     def __getitem__(self, key):
         if type(key) is slice:
             raise NotImplementedError()
         items = [
-            self._get_np_item(self.state_store, key, self.state_info[0]),
-            self._get_np_item(self.state_next_store, key, self.state_info[0]),
-            self._get_np_item(self.action_store, key, self.action_info[0]),
+            self._get_np_item(self.state_store, key, self.state_info),
+            self._get_np_item(self.state_next_store, key, self.state_info),
+            self._get_np_item(self.action_store, key, self.action_info),
             # self._get_np_item(self.reward_store, key, self.reward_info[0]),
             self.reward_store[key],
             self.done_store[key],
@@ -229,13 +244,13 @@ class DataStore:
     # params: 
     #   - value: a non-object type numpy array to be set
     #   - key: index to store value at 
-    def __setitem__(self, value, key):
+    def __setitem__(self, key, value):
         if type(key) is slice:
             raise NotImplementedError()
         s,s_n,a,r,d,*_ = value
-        self._put_np_item(self.state_store, key, s)
-        self._put_np_item(self.state_next_store, key, s_n)
-        self._put_np_item(self.action_store, key, a)
+        self._put_np_item(self.state_store, key, s, self.state_info)
+        self._put_np_item(self.state_next_store, key, s_n, self.state_info)
+        self._put_np_item(self.action_store, key, a, self.action_info)
         # self._put_np_item(self.reward_store, key, r)
         self.reward_store[key] = r
         self.done_store[key] = d
